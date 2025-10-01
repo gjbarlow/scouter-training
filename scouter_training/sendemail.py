@@ -2,11 +2,11 @@ import smtplib
 from email.message import EmailMessage
 
 class SendEmail:
-	def __init__(self, user="gregoryjbarlow@gmail.com", password="pjvb zwrv puru wkxs"):
+	def __init__(self, user, password, smtp_server = "smtp.gmail.com", smtp_port = 587):
 		self.user = user
 		self.password = password
-		self.smtp_server = "smtp.gmail.com"
-		self.smtp_port = 587
+		self.smtp_server = smtp_server
+		self.smtp_port = smtp_port
 
 	def send(self, addr, subject, body):
 		msg = EmailMessage()
