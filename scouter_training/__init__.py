@@ -58,9 +58,9 @@ class Training:
 		trained_all = 0
 		for person in self.people.keys():
 			total += 1
-			if self.people[person]['trained_any']:
+			if self.people[person].trained_any:
 				trained_any += 1
-				if self.people[person]['trained_all']:
+				if self.people[person].trained_all:
 					trained_all += 1
 		try:
 			percent_any = 100.0*trained_any/total
