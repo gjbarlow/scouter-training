@@ -13,6 +13,7 @@ class PersonOnePosition:
 		self.gender_accepted = ''
 		self.program_position = ''
 		self.direct_contact = ''
+		self.syt = True
 		self.trained = False
 		self.expired = False
 		self.missing = False
@@ -34,7 +35,11 @@ class PersonOnePosition:
 		return retval
 
 	def __repr__(self):
-		return f"Person({self.disp_name}, {self.position}, {self.bsa_id}, trained={self.trained})"
+		retval = f"Person({self.disp_name}, {self.position}, {self.bsa_id}, trained={self.trained}"
+		if self.expired:
+			retval += f", expired={self.expired}"
+		retval += ")"
+		return retval
 
 	def init_from_line(self, line):
 		Council,Service_Area,District,Sub_District,Unit,Gender_Accepted,Chartered_Org_Name,First_Name,Middle_Name,Last_Name,Zip_Code,MemberID,Program,Email,Position,Direct_Contact_Leader,Trained,Registration_Expiration_Date,Incomplete_Mandatory,Incomplete_Classroom,Incomplete_Online = line
@@ -94,7 +99,17 @@ class PersonAllPositions:
 		self.missing = person.missing
 
 	def __str__(self):
-		return f"{self.disp_name}, {self.bsa_id}"
+		retval = f"{self.disp_name}\n{self.bsa_id}\n"
+		for position in self.positions:
+			retval += f"{position.unit}\t{position.position.ljust(25)}\tTrained: {position.trained}"
+			if position.expired:
+				retval += f"\tExpired: {self.expired}"
+			retval += "\n"
+		retval += "\n"
+		return retval
+
+	def __repr__(self):
+		return f"Person({self.disp_name}, {self.bsa_id}, syt={self.syt}, trained_all={self.trained_all})"
 
 	def update(self, person):
 		self.positions.append(person)
@@ -111,6 +126,7 @@ class PersonAllPositions:
 			self.trained_any = False
 			for position in self.positions:
 				position.trained = False
+				position.syt = False
 
 class Unit:
 	def __init__(self, unit_name, program, gender_accepted):
@@ -120,18 +136,21 @@ class Unit:
 		self.adults = 0
 		self.trained = 0
 		self.expired = 0
+		self.expired_syt = 0
 		self.key3_trained = True
 		self.people = []
 		self.people_trained = []
 		self.people_not_trained = []
 		self.people_expired = []
+		self.people_expired_syt = []
+		self.key3 = []
 		self.key3_positions = ['Chartered Organization Rep.', 'Committee Chair', 'Scoutmaster', 'Cubmaster', 'Skipper', 'Venturing Crew Advisor', 'District Chair', 'District Commissioner']
 
 	def __str__(self):
 		percent_trained = 100*self.trained/self.adults
-		return f"{percent_trained:.2f}%\t{self.trained}\t{self.adults}\t{self.expired}\t{self.unit}"
+		return f"{percent_trained:.2f}%\t{self.trained}\t{self.adults}\t{self.expired}\t{self.expired_syt}\t{self.unit}"
 
-	def update(self, person, use_expiration=False):
+	def update(self, person, use_expiration=True):
 		if use_expiration and person.expired:
 			self.people_expired.append(person)
 			self.expired += 1
@@ -143,7 +162,11 @@ class Unit:
 				self.trained += 1
 			else:
 				self.people_not_trained.append(person)
+			if not person.syt:
+				self.people_expired_syt.append(person)
+				self.expired_syt += 1
 			if person.position in self.key3_positions:
+				self.key3.append((self.unit, person.position, person.name, person.bsa_id, person.email))
 				self.key3_trained &= person.trained
 
 	def percent_trained(self):

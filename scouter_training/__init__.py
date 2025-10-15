@@ -6,6 +6,7 @@ class Training:
 	def __init__(self, training_file = None, syt_file = None):
 		self.people = {}
 		self.units = {}
+		self.names = {}
 
 		# Need to add check for input files
 
@@ -22,6 +23,9 @@ class Training:
 				self.people[person.bsa_id] = data.PersonAllPositions(person)
 			else:
 				self.people[person.bsa_id].update(person)
+
+		for person in self.people:
+			self.names[self.people[person].name] = self.people[person].bsa_id
 
 		# Add SAFEguarding Youth Training information to all people
 		for person in syt_data:
@@ -42,7 +46,7 @@ class Training:
 
 	def ranking(self):
 		units_by_percent_trained = sorted([(self.units[unit].trained/self.units[unit].adults, unit) for unit in self.units], reverse=True)
-		print("% Trnd\tTrained\tAdults\tExpired\tUnit")
+		print("% Trnd\tTrained\tAdults\tExpired\tNo SYT\tUnit")
 		for unit in units_by_percent_trained:
 			print(self.units[unit[1]])
 
@@ -69,7 +73,23 @@ class Training:
 		except:
 			print(data)
 
-	def untrained(self, unit):
+	def person(self, name):
+		ids = []
+		if name in self.names.keys():
+			ids.append(self.names[name])
+		else:
+			for n in self.names.keys():
+				if name in n:
+					id = self.names[n]
+					ids.append(id)
+		for id in ids:
+			print(self.people[id])
+
+
+	def not_trained(self, unit):
 		for p in self.units[unit].people_not_trained:
 			print(p)
 
+	def expired(self, unit):
+		for p in self.units[unit].people_expired:
+			print(p)
