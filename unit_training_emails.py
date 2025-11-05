@@ -2,9 +2,11 @@ import scouter_training
 import os
 import sys
 import datetime
+import json
 
 training_file = "TrainedLeader_Lackawanna_01.csv"
 syt_file = "SYT_Lackawanna_01.csv"
+creds_file = 'credentials.json'
 
 if not os.path.isfile(training_file):
 	print('Trained leader file is missing', training_file)
@@ -15,7 +17,10 @@ elif not os.path.isfile(syt_file):
 else:
 	t = scouter_training.Training(training_file, syt_file)
 
-s = scouter_training.sendemail.SendEmail(EMAIL_ADDRESS, APP_PASSWORD)
+with open(creds_file, 'r') as fh:
+	creds = json.load(fh)
+
+s = scouter_training.sendemail.SendEmail(creds)
 
 if len(sys.argv) > 1:
 	unit = ' '.join(sys.argv[1:])
@@ -36,6 +41,8 @@ percent_trained = unitobj.percent_trained()
 
 month = datetime.datetime.now().strftime('%B')
 
+ready = input('Ready to send?')
+
 for person in people:
 	addr = person.email
 	subject = '%s - Registered Leader Training'%(disp_unit)
@@ -55,8 +62,13 @@ This is a reminder for %s to complete your position-specific training for your r
 If you need help or you have questions, please let me know. Thank you for your commitment to youth and the Scouting movement!
 
 Yours in Scouting,
-NAME
-CONTACT INFO'''
+'''
 
-	print(addr, "\n", subject, "\n", body)
-	# s.send(addr, subject, body)
+	if 'signature' in creds.keys() and creds['signature']:
+		body += creds['signature']
+
+	if ready.lower()[0] == 'y':
+		# print('send email')
+		s.send(addr, subject, body)
+	else:
+		print(addr, "\n", subject, "\n", body, "\n")
