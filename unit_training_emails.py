@@ -22,6 +22,11 @@ with open(creds_file, 'r') as fh:
 
 s = scouter_training.sendemail.SendEmail(creds)
 
+if "filter_emails" in creds.keys():
+	filter_emails = creds["filter_emails"]
+else:
+	filter_emails = []
+
 if len(sys.argv) > 1:
 	unit = ' '.join(sys.argv[1:])
 	if unit not in t.units:
@@ -45,6 +50,10 @@ ready = input('Ready to send?')
 
 for person in people:
 	addr = person.email
+
+	if addr in filter_emails:
+		continue
+
 	subject = '%s - Registered Leader Training'%(disp_unit)
 	body = '''Hello %s,
 
