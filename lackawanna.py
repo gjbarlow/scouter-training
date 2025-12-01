@@ -11,4 +11,5 @@ elif not os.path.isfile(syt_file):
 else:
 	t = scouter_training.Training(training_file, syt_file)
 	t.summary()
+	t.direct_contact()
 	t.ranking()

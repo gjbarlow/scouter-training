@@ -134,7 +134,9 @@ class Unit:
 		self.program = program
 		self.gender_accepted = gender_accepted
 		self.adults = 0
+		self.adults_direct_contact = 0
 		self.trained = 0
+		self.trained_direct_contact = 0
 		self.expired = 0
 		self.expired_syt = 0
 		self.key3_trained = True
@@ -148,7 +150,8 @@ class Unit:
 
 	def __str__(self):
 		percent_trained = 100*self.trained/self.adults
-		return f"{percent_trained:.2f}%\t{self.trained}\t{self.adults}\t{self.expired}\t{self.expired_syt}\t{self.unit}"
+		percent_trained_direct_contact = 100*self.trained_direct_contact/self.adults_direct_contact if self.adults_direct_contact>0 else 0
+		return f"{percent_trained:.2f}%\t{percent_trained_direct_contact:.2f}%\t{self.trained}\t{self.adults}\t{self.adults_direct_contact}\t{self.expired}\t{self.expired_syt}\t{self.unit}"
 
 	def update(self, person, use_expiration=True):
 		if use_expiration and person.expired:
@@ -157,6 +160,10 @@ class Unit:
 		else:
 			self.people.append(person)
 			self.adults += 1
+			if person.direct_contact:
+				self.adults_direct_contact += 1
+				if person.trained:
+					self.trained_direct_contact += 1
 			if person.trained:
 				self.people_trained.append(person)
 				self.trained += 1
@@ -186,3 +193,17 @@ class Unit:
 			print(item)
 			print('')
 
+class Course:
+	def __init__(self, course_code, course_name):
+		self.course_code = course_code
+		self.course_name = course_name
+		self.people_not_trained = []
+
+	def __str__(self):
+		return f"{self.needed()}\t{self.course_code}\t{self.course_name}"
+
+	def update(self, person):
+		self.people_not_trained.append(person)
+
+	def needed(self):
+		return len(self.people_not_trained)
