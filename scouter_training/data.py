@@ -97,6 +97,8 @@ class PersonAllPositions:
 		self.direct_contact = person.direct_contact
 		self.expired = person.expired
 		self.missing = person.missing
+		self.bsa_expiration = None
+		self.syt_expiration = None
 
 	def __str__(self):
 		retval = f"{self.disp_name}\n{self.bsa_id}\n"
@@ -119,7 +121,7 @@ class PersonAllPositions:
 		self.expired |= person.expired
 		self.missing |= person.missing
 
-	def syt_update(self, sy_trained):
+	def syt_update(self, sy_trained, syt_expiration=None, bsa_expiration=None):
 		self.syt = sy_trained
 		if not sy_trained:
 			self.trained_all = False
@@ -127,6 +129,8 @@ class PersonAllPositions:
 			for position in self.positions:
 				position.trained = False
 				position.syt = False
+		self.syt_expiration = syt_expiration
+		self.bsa_expiration = bsa_expiration
 
 class Unit:
 	def __init__(self, unit_name, program, gender_accepted):
@@ -139,6 +143,8 @@ class Unit:
 		self.trained_direct_contact = 0
 		self.expired = 0
 		self.expired_syt = 0
+		self.count_youth = 0
+		self.count_adults = 0
 		self.key3_trained = True
 		self.people = []
 		self.people_trained = []
@@ -149,9 +155,10 @@ class Unit:
 		self.key3_positions = ['Chartered Organization Rep.', 'Committee Chair', 'Scoutmaster', 'Cubmaster', 'Skipper', 'Venturing Crew Advisor', 'District Chair', 'District Commissioner']
 
 	def __str__(self):
-		percent_trained = 100*self.trained/self.adults
+		percent_trained = self.percent_trained()
 		percent_trained_direct_contact = 100*self.trained_direct_contact/self.adults_direct_contact if self.adults_direct_contact>0 else 0
-		return f"{percent_trained:.2f}%\t{percent_trained_direct_contact:.2f}%\t{self.trained}\t{self.adults}\t{self.adults_direct_contact}\t{self.expired}\t{self.expired_syt}\t{self.unit}"
+		# return f"{percent_trained:.2f}%\t{percent_trained_direct_contact:.2f}%\t{self.trained}\t{self.adults}\t{self.adults_direct_contact}\t{self.expired}\t{self.expired_syt}\t{self.unit}"
+		return f"{percent_trained:.2f}%\t{percent_trained_direct_contact:.2f}%\t{self.trained}\t{self.adults}\t{self.adults_direct_contact}\t{self.expired}\t{self.expired_syt}\t{self.count_youth}\t{self.count_adults}\t{self.unit}"
 
 	def update(self, person, use_expiration=True):
 		if use_expiration and person.expired:
@@ -177,7 +184,9 @@ class Unit:
 				self.key3_trained &= person.trained
 
 	def percent_trained(self):
-		return(100.0*self.trained/self.adults)
+		if self.adults > 0:
+			return(100.0*self.trained/self.adults)
+		return(0.0)
 
 	def need_training(self):
 		self.print_list(self.people_not_trained)
@@ -192,6 +201,15 @@ class Unit:
 		for item in obj:
 			print(item)
 			print('')
+
+	def roster(self):
+		roster_list = []
+		for person in self.people:
+			roster_list.append((person.position, person.disp_name))
+		roster_list.sort()
+		for person in roster_list:
+			print(f"{person[0]},{person[1]}")
+		return roster_list
 
 class Course:
 	def __init__(self, course_code, course_name):

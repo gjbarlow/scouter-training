@@ -1,9 +1,10 @@
 from . import data
 from . import files
 from . import sendemail
+import datetime
 
 class Training:
-	def __init__(self, training_file = None, syt_file = None):
+	def __init__(self, training_file = None, syt_file = None, co_file = None):
 		self.people = {}
 		self.units = {}
 		self.names = {}
@@ -34,7 +35,7 @@ class Training:
 			bsa_id = int(memberid)
 			syt_trained = isyptcurrent2 == "YES"
 			if bsa_id in self.people:
-				self.people[bsa_id].syt_update(syt_trained)
+				self.people[bsa_id].syt_update(syt_trained, yptexpirationdatec, cregistrationexpirydate)
 			else:
 				pass
 
@@ -45,6 +46,16 @@ class Training:
 					self.units[position.unit] = data.Unit(position.unit, position.program, position.gender_accepted)
 				self.units[position.unit].update(position)
 
+		if co_file:
+			co_data = files.readfile(co_file)
+			for unit in co_data:
+				territoryname,councilname,subcouncilname,districtname,subdistrictname,unitname,unitid,genderaccepted,expirydtstr,specialinteresttypecode,specialinteresttype,communityorganization,communityorganizationtypecode,communityorganizationtype,tenure,address,citystate,zip,phone,qttyouth,qttadultvolunteers,communityorganizationtypeshort,ciscouncilpaid = unit
+				if unitname in self.units:
+					self.units[unitname].count_youth = int(qttyouth)
+					self.units[unitname].count_adults = int(qttadultvolunteers)
+				else:
+					print(unitname)
+
 		# Create course data
 		for bsa_id in self.people:
 			person = self.people[bsa_id]
@@ -54,17 +65,41 @@ class Training:
 						self.courses[course_code] = data.Course(course_code, course_name)
 					self.courses[course_code].update(person)
 
-	def ranking(self):
-		units_by_percent_trained = sorted([(self.units[unit].trained/self.units[unit].adults, unit) for unit in self.units], reverse=True)
-		print("% Trnd\tDC Trnd\tTrained\tAdults\tDC\tExpired\tNo SYT\tUnit")
+	def ranking(self,include_empty=True):
+		units_by_percent_trained = sorted([(self.units[unit].percent_trained(), unit) for unit in self.units if (include_empty or self.units[unit].count_youth > 0)], reverse=True)
+		print("% Trnd\tDC Trnd\tTrained\tRoles\tDC\tExpired\tNo SYT\tYouth\tAdults\tUnit")
 		for unit in units_by_percent_trained:
 			print(self.units[unit[1]])
 
-	def ranking_direct_contact(self):
-		units_by_percent_trained = sorted([(self.units[unit].trained_direct_contact/self.units[unit].adults_direct_contact if self.units[unit].adults_direct_contact>0 else 0, self.units[unit].trained/self.units[unit].adults, unit) for unit in self.units], reverse=True)
-		print("% Trnd\tDC Trnd\tTrained\tAdults\tDC\tExpired\tNo SYT\tUnit")
+	def ranking_direct_contact(self,include_empty=True):
+		units_by_percent_trained = sorted([(self.units[unit].trained_direct_contact/self.units[unit].adults_direct_contact if self.units[unit].adults_direct_contact>0 else 0, self.units[unit].trained/self.units[unit].adults, unit) for unit in self.units if (include_empty or self.units[unit].count_youth > 0)], reverse=True)
+		print("% Trnd\tDC Trnd\tTrained\tRoles\tDC\tExpired\tNo SYT\tYouth\tAdults\tUnit")
 		for unit in units_by_percent_trained:
 			print(self.units[unit[2]])
+
+	def unit_size(self,include_empty=True):
+		units_by_size = sorted([(self.units[unit].count_youth, unit) for unit in self.units if (include_empty or self.units[unit].count_youth > 0)], reverse=True)
+		print("% Trnd\tDC Trnd\tTrained\tRoles\tDC\tExpired\tNo SYT\tYouth\tAdults\tUnit")
+		for unit in units_by_size:
+			print(self.units[unit[1]])
+
+	def district_size(self):
+		packs = 0
+		troops = 0
+		oyp = 0
+		for unit in self.units:
+			if self.units[unit].program == 'Cub Scouting':
+				packs += self.units[unit].count_youth
+			elif self.units[unit].program == 'Scouts BSA':
+				troops += self.units[unit].count_youth
+			elif self.units[unit].program in ['Venturers', 'Sea Scouts']:
+				oyp += self.units[unit].count_youth
+			else:
+				print(unit)
+		print(f'Packs:\t{packs}')
+		print(f'Troops:\t{troops}')
+		print(f'OYP:\t{oyp}')
+
 
 	def listed(self):
 		unit_keys = sorted(self.units.keys())
@@ -131,3 +166,23 @@ class Training:
 	def expired(self, unit):
 		for p in self.units[unit].people_expired:
 			print(p)
+
+	def syt_report(self, days_filter=30, unit_filter=[]):
+		upcoming = set([])
+		if unit_filter:
+			people_list = list(set([person.bsa_id for unit in unit_filter for person in self.units[unit].people]))
+		else:
+			people_list = self.people.keys()
+		# for person in self.people:
+		for person in people_list:
+			time_to_expiration = datetime.datetime.strptime(self.people[person].syt_expiration, "%m/%d/%Y") - datetime.datetime.now()
+			if time_to_expiration.days < days_filter:
+				item = (time_to_expiration.days, person)
+				upcoming.add(item)
+		for person in sorted(list(upcoming)):
+			days,bsa_id = person
+			s = f"{self.people[bsa_id].syt_expiration}\t{days}\t{self.people[bsa_id].disp_name}"
+			# print(self.people[bsa_id])
+			print(s)
+		return upcoming
+

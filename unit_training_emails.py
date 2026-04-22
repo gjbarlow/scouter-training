@@ -33,6 +33,7 @@ if len(sys.argv) > 1:
 		print('Unit not found')
 		exit()
 else:
+	print('Please specify a unit')
 	exit()
 
 unit_type, unit_number = unit.split()
